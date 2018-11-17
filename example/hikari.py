@@ -84,6 +84,17 @@ class List():  # 基于双向链表
     def last(self):  # 末结点位置
         return self.__trailer.prev
 
+    # def set_head(self, head):  #
+    #     assert isinstance(head, ListNode)
+    #     self.__size = 1
+    #     while head.next:
+    #         self.__header.next = head
+    #         head.prev = self.__header
+    #         head = head.next
+    #         self.__size += 1
+    #     self.__trailer.pre = head
+    #     head.next = self.__trailer
+
     def valid(self, p):  # 判断位置p是否有效
         return p and self.__trailer != p and self.__header != p
 
@@ -209,3 +220,282 @@ class Queue(List):  # 队列
 
     def rear(self):
         return self.last().val
+
+
+class TreeNode():  # 二叉树结点
+    def __init__(self, val, parent=None, left=None, right=None):
+        self.val = val
+        self.parent = parent
+        self.left = left
+        self.right = right
+        # self.height = 0  # 高度
+
+    def insert_as_left_child(self, e):  # 作为左孩子插入
+        self.left = TreeNode(e, self)
+        return self.left
+
+    def insert_as_right_child(self, e):
+        self.right = TreeNode(e, self)
+        return self.right
+
+    def size(self):  # 后代总数,子树规模, O(n)
+        s = 1  # 包括本身
+        # 左右子树递归
+        s += self.left.size() if self.left is not None else 0
+        s += self.right.size() if self.right is not None else 0
+        return s
+
+    def __eq__(self, other):
+        return self.val == other
+
+    def __lt__(self, other):
+        return self.val < other.val
+
+    def __gt__(self, other):
+        return self.val > other.val
+
+    def has_left_child(self):
+        return self.left is not None
+
+    def has_right_child(self):
+        return self.right is not None
+
+    def is_leaf(self):
+        return self.left is None and self.right is None
+
+    def has_no_children(self):
+        return self.is_leaf()
+
+    def has_both_left_right(self):
+        return self.left is not None and self.right is not None
+
+    def has_child_x(self, x):
+        return self.left == x or self.right == x
+
+    @staticmethod
+    def stature(p):  # 获取结点p子树的高度
+        if p is None:
+            return -1
+        assert isinstance(p, TreeNode)
+        return p.height
+
+
+class BinaryTree():  # 二叉树
+    def __init__(self, arr=None, root=None):
+        self.__root = root
+        self.__size = 0
+        if arr is not None:
+            self.build_tree(arr)
+
+    def build_tree(self, arr=None):
+        """自己瞎写的，构造二叉树"""
+        arr = [] if arr is None else list(arr)
+        n = len(arr)
+        if n == 0:
+            return
+        self.__root = TreeNode(arr[0])
+        queue = Queue()
+        queue.enqueue(self.__root)
+        index = 1
+        self.__size = 1
+        while index < n:  # 结束条件为arr元素全部添加到树
+            # 取出队首结点, 将arr后2个元素作为该结点左右孩子并将孩子入队
+            p = queue.dequeue()
+            val = arr[index]
+            index += 1
+            if val == '#':
+                p.left = None
+            else:
+                p.left = TreeNode(val, p)
+                queue.enqueue(p.left)
+                self.__size += 1
+            if index >= n:
+                return
+            val = arr[index]
+            index += 1
+            if val == '#':
+                p.right = None
+            else:
+                p.right = TreeNode(val, p)
+                queue.enqueue(p.right)
+                self.__size += 1
+
+    @staticmethod
+    def update_height(x):  # 更新结点x的高度,具体规则因树不同而异
+        if x is None:
+            return -1
+        assert isinstance(x, TreeNode)
+        # stature(p)=p.height is p else -1
+        # x的高度为左右子树高度较大者+1, O(1)
+        x.height = 1 + max(TreeNode.stature(x.left),
+                           TreeNode.stature(x.right))
+        return x.height
+
+    @staticmethod
+    def update_height_above(x):  # 更新结点x及祖先的高度
+        if x is None:
+            return
+        assert isinstance(x, TreeNode)
+        while x is not None:  # 可优化,一旦高度未变,即可终止
+            BinaryTree.update_height(x)
+            x = x.parent  # O(depth(x))
+
+    def size(self):  # 规模
+        return self.__size
+
+    def empty(self):  # 判空
+        return self.__root is None
+
+    def root(self):  # 树根
+        return self.__root
+
+    def reset(self, root):  # 重设树根
+        assert isinstance(root, TreeNode)
+        self.__root = root
+        self.__size = self.__root.size()
+
+    def insert_as_right_child(self, x, e):
+        self.__size += 1  # 假设x存在并没有右孩子
+        x.insert_as_right_child(e)
+        BinaryTree.update_height_above(x)  # 祖先结点高度可以增加
+        return x.right
+
+    def preorder_traverse(self, visit):  # 先序遍历
+        assert callable(visit)
+        BinaryTree.__preorder(self.__root, visit)
+
+    @staticmethod
+    def __visit_along_left(x, vist, stack):
+        while x is not None:
+            vist(x.val)  # 访问左侧通路各个结点
+            stack.push(x.right)  # 右孩子入栈
+            x = x.left  # 左侧下行
+
+    @staticmethod
+    def __preorder(x, visit):
+        s = Stack()  # 辅助栈
+        while True:
+            # 访问子树x的左侧通路,右子树入栈缓冲
+            BinaryTree.__visit_along_left(x, visit, s)
+            if s.empty():
+                break
+            x = s.pop()  # 弹出下一子树的根
+
+    @staticmethod
+    def __go_along_left(x, stack):
+        while x is not None:
+            stack.push(x)  # 反复将左侧通路结点入栈
+            x = x.left
+
+    @staticmethod
+    def __inorder(x, visit):  # 中序遍历迭代版本1
+        s = Stack()  # 辅助栈
+        while True:
+            BinaryTree.__go_along_left(x, s)
+            if s.empty():
+                break
+            x = s.pop()  # 取出最左侧的结点
+            visit(x.val)  # 访问之
+            x = x.right  # 转向右子树
+
+    def inorder_traverse(self, visit):  # 中序遍历
+        assert callable(visit)
+        BinaryTree.__inorder(self.__root, visit)
+
+    def postorder_traverse(self, visit):  # 后序遍历
+        assert callable(visit)
+        # BinaryTree.__postorder_i2(self.__root, visit)
+        BinaryTree.__postorder_iter(self.__root, visit)
+
+    @staticmethod
+    def __postorder(x, visit):
+        if x is None:
+            return
+        BinaryTree.__postorder(x.left, visit)
+        BinaryTree.__postorder(x.right, visit)
+        visit(x.val)
+
+    @staticmethod
+    def __traverse_level(x, visit):  # 以该结点为根的层次遍历
+        if x is None:
+            return
+        queue = Queue()  # 辅助队列
+        queue.enqueue(x)  # 首先根结点入队
+        while not queue.empty():
+            x = queue.dequeue()
+            visit(x.val)
+            if x.left is not None:  # 左孩子入队
+                queue.enqueue(x.left)
+            if x.right is not None:  # 右孩子入队
+                queue.enqueue(x.right)
+
+    def level_order_traverse(self, visit):  # 层次遍历
+        assert callable(visit)
+        BinaryTree.__traverse_level(self.__root, visit)
+
+    def preorder_list(self):
+        lst = []
+        self.preorder_traverse(lambda x: lst.append(x))
+        return lst
+
+    def inorder_list(self):
+        lst = []
+        self.inorder_traverse(lambda x: lst.append(x))
+        return lst
+
+    def postorder_list(self):
+        lst = []
+        self.postorder_traverse(lambda x: lst.append(x))
+        return lst
+
+    def level_order_list(self):
+        lst = []
+        self.level_order_traverse(lambda x: lst.append(x))
+        return lst
+
+    @staticmethod
+    def __go_to_HLVFL(stack):
+        # 在以栈顶结点为根的子树中，找到最高左侧可见叶结点
+        x = stack.top()
+        while x is not None:  # 沿途结点依次入栈
+            if x.left is not None:
+                if x.right is not None:  # 右孩子先入后出
+                    stack.push(x.right)
+                stack.push(x.left)
+            else:
+                stack.push(x.right)  # 没有左孩子,转向右
+            x = stack.top()  # 转到下一个结点
+        stack.pop()  # 删除空结点
+
+    @staticmethod
+    def __postorder_iter(x, visit):  # 后序遍历迭代版本
+        # print('后序遍历迭代版本')
+        s = Stack()
+        if x is not None:
+            s.push(x)  # 根结点入栈
+        while not s.empty():
+            # 若栈顶不是当前结点父结点,必是其右兄弟,需要在以
+            # 右兄弟为根的子树中找到HLVFL(深入其中)
+            if s.top() != x.parent:
+                BinaryTree.__go_to_HLVFL(s)
+            x = s.pop()
+            visit(x.val)
+
+    @staticmethod
+    def __postorder_i2(x, visit):
+        if x is None:
+            return
+        pre = None  # 记录上一次访问结点
+        s = Stack()
+        s.push(x)
+        while not s.empty():
+            x = s.top()
+            # 如果当前结点是叶结点或孩子结点刚被访问过
+            if x.is_leaf() or (pre is not None and (x.has_child_x(pre))):
+                visit(x.val)  # 访问之
+                pre = s.pop()  # 弹出并更新记录
+            else:  # 左右孩子入栈,如果有右孩子,则先入(后出)
+                if x.has_right_child():
+                    s.push(x.right)
+                if x.has_left_child():
+                    s.push(x.left)

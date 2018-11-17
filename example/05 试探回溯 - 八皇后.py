@@ -19,7 +19,7 @@ def queen(n):  # n皇后问题,利用栈,非递归
         else:  # 试探下一行,一直冲突就不断下一列,寻找可以摆放的列
             while col < n and conflict(solution, row, col):
                 col += 1
-            if n > col:  # 出了循环,col可能还会越界
+            if col < n:  # 出了循环,col可能还会越界
                 solution.append(col)  # 存在就放入
                 row, col = row+1, 0  # 转入下一行第一列开始试探
                 if row == n:  # 如果摆放到最后一行, 将结果yield
@@ -54,13 +54,13 @@ def queen3(A, row=0):  # 从第0行开始
         queen3_lst.append([x for x in A])
         return
     for col in range(len(A)):
-        A[row] = col  # 每列逐一尝试,如果不冲突则递归下一行
-        if not conflict(A, row, col):  # 冲突什么也不做,直接尝试下一列
-            queen3(A, row+1)
+        if not conflict(A, row, col):  # 每列逐一尝试,如果不冲突则
+            A[row] = col  # 放入并
+            queen3(A, row+1)  # 递归下一行
 
 
 if __name__ == "__main__":
-    n = 8
+    n = 9
     ret = list(queen(n))
     print(f'{n}皇后问题总共{len(ret)}种方法\n随机挑选一种方法:')
     pretty_print(random.choice(ret))
